@@ -54,17 +54,19 @@ public class Subscribe {
           consumer.ack();
         };
 
-    try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(
-        SubscriptionAdminSettings.newBuilder()
-            .setTransportChannelProvider(channelProvider)
-            .setCredentialsProvider(credentialsProvider)
-            .build()
-    )) {
+    try (SubscriptionAdminClient subscriptionAdminClient =
+        SubscriptionAdminClient.create(
+            SubscriptionAdminSettings.newBuilder()
+                .setTransportChannelProvider(channelProvider)
+                .setCredentialsProvider(credentialsProvider)
+                .build())) {
 
       Duration messageRetentionDuration =
           subscriptionAdminClient
               .getSubscription(
-                  GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())
+                  GetSubscriptionRequest.newBuilder()
+                      .setSubscription(subscriptionName.toString())
+                      .build())
               .getMessageRetentionDuration();
 
       LocalDateTime retentionTime =
@@ -88,10 +90,11 @@ public class Subscribe {
 
     Subscriber subscriber = null;
     try {
-      subscriber = Subscriber.newBuilder(subscriptionName, receiver)
-          .setChannelProvider(channelProvider)
-          .setCredentialsProvider(credentialsProvider)
-          .build();
+      subscriber =
+          Subscriber.newBuilder(subscriptionName, receiver)
+              .setChannelProvider(channelProvider)
+              .setCredentialsProvider(credentialsProvider)
+              .build();
       subscriber.startAsync().awaitRunning();
       System.out.printf("Listening for messages on %s:\n", subscriptionName.toString());
       subscriber.awaitTerminated(30, TimeUnit.SECONDS);

@@ -48,11 +48,12 @@ public class CreateResources {
         FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
     CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
 
-    try (TopicAdminClient topicAdminClient = TopicAdminClient.create(
-        TopicAdminSettings.newBuilder()
-            .setTransportChannelProvider(channelProvider)
-            .setCredentialsProvider(credentialsProvider)
-            .build())) {
+    try (TopicAdminClient topicAdminClient =
+        TopicAdminClient.create(
+            TopicAdminSettings.newBuilder()
+                .setTransportChannelProvider(channelProvider)
+                .setCredentialsProvider(credentialsProvider)
+                .build())) {
       TopicName topicName = TopicName.of(projectId, topicId);
       try {
         Topic topic = topicAdminClient.createTopic(topicName);
@@ -60,9 +61,9 @@ public class CreateResources {
       } catch (AlreadyExistsException | StatusRuntimeException e) {
         System.out.println(topicName + " already exits.");
       }
-
     }
   }
+
   public static void createPullSubscriptionExample(
       String projectId, String subscriptionId, String topicId) throws IOException {
     String hostport = System.getenv("PUBSUB_EMULATOR_HOST");
@@ -71,12 +72,12 @@ public class CreateResources {
         FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
     CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
 
-    try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(
-        SubscriptionAdminSettings.newBuilder()
-            .setTransportChannelProvider(channelProvider)
-            .setCredentialsProvider(credentialsProvider)
-            .build()
-    )) {
+    try (SubscriptionAdminClient subscriptionAdminClient =
+        SubscriptionAdminClient.create(
+            SubscriptionAdminSettings.newBuilder()
+                .setTransportChannelProvider(channelProvider)
+                .setCredentialsProvider(credentialsProvider)
+                .build())) {
       TopicName topicName = TopicName.of(projectId, topicId);
       ProjectSubscriptionName subscriptionName =
           ProjectSubscriptionName.of(projectId, subscriptionId);
@@ -86,8 +87,7 @@ public class CreateResources {
                 Subscription.newBuilder()
                     .setTopic(topicName.toString())
                     .setName(subscriptionName.toString())
-                    .build()
-            );
+                    .build());
         System.out.println("Created pull subscription: " + subscription.getName());
       } catch (AlreadyExistsException | StatusRuntimeException e) {
         System.out.println(subscriptionName + " already exists.");
@@ -103,24 +103,24 @@ public class CreateResources {
         FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
     CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
 
-    try (SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(
-        SubscriptionAdminSettings.newBuilder()
-            .setTransportChannelProvider(channelProvider)
-            .setCredentialsProvider(credentialsProvider)
-            .build()
-    )) {
+    try (SubscriptionAdminClient subscriptionAdminClient =
+        SubscriptionAdminClient.create(
+            SubscriptionAdminSettings.newBuilder()
+                .setTransportChannelProvider(channelProvider)
+                .setCredentialsProvider(credentialsProvider)
+                .build())) {
       TopicName topicName = TopicName.of(projectId, topicId);
       ProjectSubscriptionName subscriptionName =
           ProjectSubscriptionName.of(projectId, subscriptionId);
 
-      Subscription subscription = Subscription.newBuilder()
-          .setTopic(topicName.toString())
-          .setName(subscriptionName.toString())
-          .setRetainAckedMessages(true)
-          .build();
+      Subscription subscription =
+          Subscription.newBuilder()
+              .setTopic(topicName.toString())
+              .setName(subscriptionName.toString())
+              .setRetainAckedMessages(true)
+              .build();
 
-      FieldMask updateMask =
-          FieldMask.newBuilder().addPaths("retain_acked_messages").build();
+      FieldMask updateMask = FieldMask.newBuilder().addPaths("retain_acked_messages").build();
 
       try {
         UpdateSubscriptionRequest request =
@@ -148,10 +148,11 @@ public class CreateResources {
 
     Publisher publisher = null;
     try {
-      publisher = Publisher.newBuilder(topicName)
-          .setChannelProvider(channelProvider)
-          .setCredentialsProvider(credentialsProvider)
-          .build();
+      publisher =
+          Publisher.newBuilder(topicName)
+              .setChannelProvider(channelProvider)
+              .setCredentialsProvider(credentialsProvider)
+              .build();
 
       String message = "Hello World!";
       ByteString data = ByteString.copyFromUtf8(message);
