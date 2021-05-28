@@ -18,7 +18,7 @@ This repo shows some examples that use the [Pub/Sub Emulator].
 
 Known issue: https://github.com/googleapis/java-pubsub/issues/584
 
-In Cloud SDK release `341.0.0` and later, the following steps will work if you comment out the`updatePullSubscriptionExample(projectId, subscriptionId, topicId);`. In the earlier releases, you must uncomment it for the following steps to work.
+In Cloud SDK release `341.0.0` and later, the following steps will work if you comment out https://github.com/anguillanneuf/PubSubEmulatorExamples/blob/bcab38a0b1031448c3b7842737e47d13edbe68fe/src/main/java/CreateResources.java#L40. In the earlier releases, you must uncomment it for the following steps to work.
  
 1. Create a topic and subscription. Update the subscription to retain acked messages. Publish some messages.
    ```shell script
