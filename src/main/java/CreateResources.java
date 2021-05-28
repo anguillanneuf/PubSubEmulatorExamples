@@ -37,7 +37,7 @@ public class CreateResources {
 
     createTopicExample(projectId, topicId);
     createPullSubscriptionExample(projectId, subscriptionId, topicId);
-    updatePullSubscriptionExample(projectId, subscriptionId, topicId);
+    // updatePullSubscriptionExample(projectId, subscriptionId, topicId);
     publisherExample(projectId, topicId);
   }
 
@@ -87,6 +87,7 @@ public class CreateResources {
                 Subscription.newBuilder()
                     .setTopic(topicName.toString())
                     .setName(subscriptionName.toString())
+                    .setRetainAckedMessages(true)
                     .build());
         System.out.println("Created pull subscription: " + subscription.getName());
       } catch (AlreadyExistsException | StatusRuntimeException e) {
