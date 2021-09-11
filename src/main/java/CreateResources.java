@@ -14,6 +14,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.FieldMask;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.PubsubMessage;
+import com.google.pubsub.v1.PushConfig;
 import com.google.pubsub.v1.Subscription;
 import com.google.pubsub.v1.Topic;
 import com.google.pubsub.v1.TopicName;
@@ -33,10 +34,13 @@ public class CreateResources {
   public static void main(String... args) throws Exception {
     String projectId = "abc";
     String topicId = "may";
-    String subscriptionId = "six";
+    String pullSubscriptionId = "five";
+    String pushSubscriptionId = "five-push";
+    String pushEndpoint = "http://localhost:8082";
 
     createTopicExample(projectId, topicId);
-    createPullSubscriptionExample(projectId, subscriptionId, topicId);
+    // createPullSubscriptionExample(projectId, pullSubscriptionId, topicId);
+    createPushSubscriptionExample(projectId, pushSubscriptionId, topicId, pushEndpoint);
     // updatePullSubscriptionExample(projectId, subscriptionId, topicId);
     publisherExample(projectId, topicId);
   }
@@ -61,6 +65,8 @@ public class CreateResources {
       } catch (AlreadyExistsException | StatusRuntimeException e) {
         System.out.println(topicName + " already exits.");
       }
+    } finally {
+      channel.shutdown();
     }
   }
 
@@ -93,6 +99,46 @@ public class CreateResources {
       } catch (AlreadyExistsException | StatusRuntimeException e) {
         System.out.println(subscriptionName + " already exists.");
       }
+    } finally {
+      channel.shutdown();
+    }
+  }
+
+  public static void createPushSubscriptionExample(
+      String projectId, String subscriptionId, String topicId, String pushEndpoint) throws IOException {
+    String hostport = System.getenv("PUBSUB_EMULATOR_HOST");
+    ManagedChannel channel = ManagedChannelBuilder.forTarget(hostport).usePlaintext().build();
+    TransportChannelProvider channelProvider =
+        FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
+    CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
+
+    try (SubscriptionAdminClient subscriptionAdminClient =
+        SubscriptionAdminClient.create(
+            SubscriptionAdminSettings.newBuilder()
+                .setTransportChannelProvider(channelProvider)
+                .setCredentialsProvider(credentialsProvider)
+                .build())) {
+      TopicName topicName = TopicName.of(projectId, topicId);
+      ProjectSubscriptionName subscriptionName =
+          ProjectSubscriptionName.of(projectId, subscriptionId);
+      PushConfig pushConfig = PushConfig.newBuilder().setPushEndpoint(pushEndpoint).build();
+
+      try {
+        Subscription subscription =
+            subscriptionAdminClient.createSubscription(
+                Subscription.newBuilder()
+                    .setTopic(topicName.toString())
+                    .setName(subscriptionName.toString())
+                    .setRetainAckedMessages(true)
+                    .setPushConfig(pushConfig)
+                    .setAckDeadlineSeconds(60)
+                    .build());
+        System.out.println("Created push subscription: " + subscription.getName());
+      } catch (AlreadyExistsException | StatusRuntimeException e) {
+        System.out.println(subscriptionName + " already exists.");
+      }
+    } finally {
+      channel.shutdown();
     }
   }
 
@@ -134,6 +180,8 @@ public class CreateResources {
       } catch (StatusRuntimeException e) {
         System.out.println(subscriptionName + " did not get updated.");
       }
+    } finally {
+      channel.shutdown();
     }
   }
 
@@ -167,6 +215,7 @@ public class CreateResources {
         publisher.shutdown();
         publisher.awaitTermination(1, TimeUnit.MINUTES);
       }
+      channel.shutdown();
     }
   }
 }

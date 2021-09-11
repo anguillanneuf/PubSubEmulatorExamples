@@ -29,7 +29,7 @@ public class Subscribe {
   public static void main(String... args) throws Exception {
     // TODO(developer): Replace these variables before running the sample.
     String projectId = "abc";
-    String subscriptionId = "six";
+    String subscriptionId = "five";
 
     subscribeAsyncExample(projectId, subscriptionId);
   }
@@ -100,6 +100,7 @@ public class Subscribe {
       subscriber.awaitTerminated(30, TimeUnit.SECONDS);
     } catch (TimeoutException timeoutException) {
       subscriber.stopAsync();
+      channel.shutdown();
     }
   }
 }
