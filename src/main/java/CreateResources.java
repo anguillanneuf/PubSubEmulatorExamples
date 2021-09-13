@@ -1,19 +1,15 @@
-import com.google.api.core.ApiFuture;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.AlreadyExistsException;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannelProvider;
-import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.SubscriptionAdminClient;
 import com.google.cloud.pubsub.v1.SubscriptionAdminSettings;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.cloud.pubsub.v1.TopicAdminSettings;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.FieldMask;
 import com.google.pubsub.v1.ProjectSubscriptionName;
-import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.PushConfig;
 import com.google.pubsub.v1.Subscription;
 import com.google.pubsub.v1.Topic;
@@ -23,8 +19,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class CreateResources {
   /*
@@ -34,15 +28,14 @@ public class CreateResources {
   public static void main(String... args) throws Exception {
     String projectId = "abc";
     String topicId = "may";
-    String pullSubscriptionId = "five";
+    // String pullSubscriptionId = "five";
     String pushSubscriptionId = "five-push";
     String pushEndpoint = "http://localhost:8082";
 
     createTopicExample(projectId, topicId);
     // createPullSubscriptionExample(projectId, pullSubscriptionId, topicId);
     createPushSubscriptionExample(projectId, pushSubscriptionId, topicId, pushEndpoint);
-    // updatePullSubscriptionExample(projectId, subscriptionId, topicId);
-    publisherExample(projectId, topicId);
+    // updatePullSubscriptionExample(projectId, pullSubscriptionId, topicId);
   }
 
   public static void createTopicExample(String projectId, String topicId) throws IOException {
@@ -123,19 +116,23 @@ public class CreateResources {
           ProjectSubscriptionName.of(projectId, subscriptionId);
       PushConfig pushConfig = PushConfig.newBuilder().setPushEndpoint(pushEndpoint).build();
 
+      Subscription subscription = Subscription.newBuilder()
+          .setTopic(topicName.toString())
+          .setName(subscriptionName.toString())
+          .setRetainAckedMessages(true)
+          .setPushConfig(pushConfig)
+          .setAckDeadlineSeconds(60)
+          .build();
+
       try {
-        Subscription subscription =
-            subscriptionAdminClient.createSubscription(
-                Subscription.newBuilder()
-                    .setTopic(topicName.toString())
-                    .setName(subscriptionName.toString())
-                    .setRetainAckedMessages(true)
-                    .setPushConfig(pushConfig)
-                    .setAckDeadlineSeconds(60)
-                    .build());
-        System.out.println("Created push subscription: " + subscription.getName());
+        Subscription response = subscriptionAdminClient.createSubscription(subscription);
+        System.out.println("Created push subscription: " + response.getName() + " to " + subscription.getPushConfig().getPushEndpoint());
       } catch (AlreadyExistsException | StatusRuntimeException e) {
         System.out.println(subscriptionName + " already exists.");
+        subscriptionAdminClient.deleteSubscription(subscriptionName);
+        System.out.println("Deleted push subscription: " + subscriptionName + " to " + pushConfig.getPushEndpoint());
+        Subscription response = subscriptionAdminClient.createSubscription(subscription);
+        System.out.println("Created push subscription: " + response.getName() + " to " + subscription.getPushConfig().getPushEndpoint());
       }
     } finally {
       channel.shutdown();
@@ -181,40 +178,6 @@ public class CreateResources {
         System.out.println(subscriptionName + " did not get updated.");
       }
     } finally {
-      channel.shutdown();
-    }
-  }
-
-  public static void publisherExample(String projectId, String topicId)
-      throws IOException, ExecutionException, InterruptedException {
-    String hostport = System.getenv("PUBSUB_EMULATOR_HOST");
-    ManagedChannel channel = ManagedChannelBuilder.forTarget(hostport).usePlaintext().build();
-    TransportChannelProvider channelProvider =
-        FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
-    CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
-
-    TopicName topicName = TopicName.of(projectId, topicId);
-
-    Publisher publisher = null;
-    try {
-      publisher =
-          Publisher.newBuilder(topicName)
-              .setChannelProvider(channelProvider)
-              .setCredentialsProvider(credentialsProvider)
-              .build();
-
-      String message = "Hello World!";
-      ByteString data = ByteString.copyFromUtf8(message);
-      PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(data).build();
-
-      ApiFuture<String> messageIdFuture = publisher.publish(pubsubMessage);
-      String messageId = messageIdFuture.get();
-      System.out.println("Published message ID: " + messageId);
-    } finally {
-      if (publisher != null) {
-        publisher.shutdown();
-        publisher.awaitTermination(1, TimeUnit.MINUTES);
-      }
       channel.shutdown();
     }
   }

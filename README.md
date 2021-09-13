@@ -44,7 +44,7 @@ In Cloud SDK release `341.0.0` and later, the following steps will work if you c
    $(gcloud beta emulators pubsub env-init)
    ```
 
-1. In the second terminal, clone this repo, then run a script to create a Pub/Sub topic "may" and attach a push subscription "five" to the topic, using `http://localhost:8082` as its push endpoint.
+1. In the second terminal, clone this repo, then run a script to create a Pub/Sub topic "may" and attach a push subscription "five" to the topic, using `http://localhost:8082` as its push endpoint. You may need to comment out some lines in the main class of `CreateResources.java`.
    ```sh
    git clone https://github.com/anguillanneuf/PubSubEmulatorExamples.git
    mvn clean compile exec:java -Dexec.mainClass=CreateResources
@@ -55,27 +55,37 @@ In Cloud SDK release `341.0.0` and later, the following steps will work if you c
    git clone https://github.com/GoogleCloudPlatform/functions-framework-java.git
    ```
 
-1. In the third terminal, create a `java-function-invoker` JAR. This example uses `1.0.3-SNAPSHOT`.
-   ```sh
-   cd ../invoker
-   mvn dependency:copy \
-     -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.3-SNAPSHOT' \
-     -DoutputDirectory=.
-   ```
-
-1. In the second terminal, copy the `java-function-invoker` JAR to the `PubSubEmulatorExamples` directory. Package the examples JAR. Then try a `HelloWorld` example. Visit localhost:8080. You should see "Hello, World" show up on the page.
-   ```sh
-    mvn clean package
-    java -jar java-function-invoker-1.0.3-SNAPSHOT.jar \
-       --classpath target/emulator-1.0-SNAPSHOT.jar \
-       --target HelloWorld
-   ```
-   Alternatively, try `mvn com.google.cloud.functions:function-maven-plugin:0.9.7:run -Drun.functionTarget=HelloWorld -Drun.port=8082`.
-   Press `Ctrl+C` to abort.
+1. In order to use the Java Function Invoker, you can either include the package as a dependency in your POM file or use the Invoker's jar directly.
+   
+   1. If you choose to build the `java-function-invoker` JAR, follow these commands to build the `1.0.3-SNAPSHOT` version.
+      ```sh
+      cd ../invoker
+      mvn dependency:copy \
+        -Dartifact='com.google.cloud.functions.invoker:java-function-invoker:1.0.3-SNAPSHOT' \
+        -DoutputDirectory=.
+      ```
+      Next, give the JAR a quick test.
+      1. Copy the `java-function-invoker` JAR to the `PubSubEmulatorExamples` directory.
+      1. Package the examples JAR.
+      1. Try a `HelloWorld` example.
+      ```sh
+       mvn clean package
+       java -jar java-function-invoker-1.0.3-SNAPSHOT.jar \
+          --classpath target/emulator-1.0-SNAPSHOT.jar \
+          --target HelloWorld
+      ```
+      You should see "Hello, World" on the page when you visit localhost:8080. Press `Ctrl+C` to abort.
+   
+   1. Since the [POM file](pom.xml) in this repo already includes `function-maven-plugin` as a dependency, you can also try the `HelloWord` example using this command: 
+      ```sh
+      mvn com.google.cloud.functions:function-maven-plugin:0.9.8-SNAPSHOT:run \
+        -Drun.functionTarget=HelloWorld
+      ```
+      You should see "Hello, World" on the page when you visit localhost:8080. Press `Ctrl+C` to abort.
    
 1. In the second terminal again, try a background function on port 8082:
    ```sh
-    mvn com.google.cloud.functions:function-maven-plugin:0.9.7:run -Drun.functionTarget=Background -Drun.port=8082
+    mvn com.google.cloud.functions:function-maven-plugin:0.9.8-SNAPSHOT:run -Drun.functionTarget=Background -Drun.port=8082
    ```
 
 1. In the third terminal, invoke the background function with:
@@ -88,20 +98,26 @@ In Cloud SDK release `341.0.0` and later, the following steps will work if you c
    ```
    Press `Ctrl+C` to abort.
 
-1. In the second terminal, try a Pub/Sub background function on port 8082:
+1. Now in your second terminal, try a Pub/Sub background function on port 8082.
    ```sh
-    mvn com.google.cloud.functions:function-maven-plugin:0.9.7:run -Drun.functionTarget=PubSubBackground -Drun.port=8082
+    mvn com.google.cloud.functions:function-maven-plugin:0.9.8-SNAPSHOT:run \
+     -Drun.functionTarget=PubSubBackground \
+     -Drun.port=8082
    ```
 
-1. In the third terminal, invoke the background function with:
+1. In your third terminal, invoke the background function by publishing a message:
    ```sh
-    curl -X POST "localhost:8082" -H 'Content-Type: application/json' -d @event.json
+   mvn clean compile exec:java -Dexec.mainClass=Publish
    ```
    You should see the output in the second terminal as follows:
    ```none
-   INFO: Received JSON object: {"@type":"type.googleapis.com/google.pubsub.v1.PubsubMessage","data":"eyJmb28iOiJiYXIifQ==","attributes":{"test":"123"}}
+   INFO: Received message with id 1
    ```
-   Press `Ctrl+C` to abort.
+   You can publish again and again to see the event ID increaes. Press `Ctrl+C` to abort.
+   Functionally, publishing a message works the same as directly curling the endpoint: 
+   ```sh
+    curl -X POST "localhost:8082" -H 'Content-Type: application/json' -d @message.json  
+   ```
 
 ### Python
 

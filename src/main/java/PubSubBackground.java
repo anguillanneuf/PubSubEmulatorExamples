@@ -16,6 +16,6 @@ public class PubSubBackground implements BackgroundFunction<PubSubMessage> {
 
   @Override
   public void accept(PubSubMessage pubSubMessage, Context context) {
-    logger.info("Received message with id " + pubSubMessage.messageId);
+    logger.info("Received message with id " + context.eventId());
   }
 }
